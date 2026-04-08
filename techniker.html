@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AufzugProfi — Techniker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F8F8F6;--surface:#FFFFFF;--border:#E0DED8;
+  --primary:#3C3489;--pl:#EEEDFE;--pm:#534AB7;
+  --text:#1A1A18;--muted:#6B6966;
+  --green:#27500A;--gbg:#EAF3DE;--gborder:#97C459;
+  --red:#791F1F;--rbg:#FCEBEB;--rborder:#F09595;
+  --orange:#633806;--obg:#FAEEDA;--oborder:#EF9F27;
+  --radius:12px;--rsm:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+#app{max-width:600px;margin:0 auto;padding:14px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.hdr-t{font-size:19px;font-weight:600}
+.hdr-s{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Status Bar */
+.status-bar{padding:10px 14px;border-radius:var(--rsm);font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sb-ok{background:var(--gbg);border:1px solid var(--gborder);color:var(--green)}
+.sb-wait{background:var(--pl);border:1px solid var(--primary);color:var(--primary)}
+.sb-err{background:var(--rbg);border:1px solid var(--rborder);color:var(--red)}
+.sb-spin{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Progress */
+.prog-wrap{height:6px;background:var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden}
+.prog-bar{height:100%;background:var(--primary);border-radius:3px;transition:width .4s}
+.prog-bar.voll{background:#3B6D11}
+.prog-lbl{font-size:12px;color:var(--muted);text-align:center;margin-top:4px;margin-bottom:12px}
+
+/* Plan Items */
+.plan-item{border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);margin-bottom:8px;overflow:hidden;transition:all .2s}
+.plan-item.done{border-color:var(--gborder);background:var(--gbg)}
+.pi-top{display:flex;align-items:center;gap:10px;padding:12px}
+.pi-num{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#EEEDFE;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pi-num.done{background:#3B6D11}
+.pi-info{flex:1;min-width:0}
+.pi-street{font-size:15px;font-weight:500;transition:all .2s}
+.pi-street.done{text-decoration:line-through;color:var(--muted)}
+.pi-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.pi-bem{font-size:12px;color:var(--orange);margin-top:4px;padding:4px 8px;background:var(--obg);border-radius:6px}
+.pi-done-time{font-size:11px;color:var(--green);margin-top:3px}
+.pi-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.map-btn{padding:6px 10px;border:1px solid #81C784;border-radius:6px;background:#E8F5E9;color:#1B5E20;font-size:13px;cursor:pointer;white-space:nowrap}
+.map-btn:active{transform:scale(0.96)}
+.chk-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;flex-shrink:0}
+.chk-btn.done{background:var(--gbg);border-color:var(--gborder);color:var(--green)}
+
+/* Notiz */
+.pi-notiz{padding:0 12px 10px;display:none}
+.pi-notiz.show{display:block}
+.notiz-inp{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);outline:none;resize:none;min-height:60px}
+.notiz-inp:focus{border-color:var(--primary);background:var(--surface)}
+.notiz-save{margin-top:6px;padding:6px 14px;border-radius:var(--rsm);border:1px solid var(--primary);background:var(--pl);color:var(--primary);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+
+/* Datum Auswahl */
+.datum-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.datum-row label{font-size:13px;color:var(--muted)}
+.datum-row input{padding:8px 12px;border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--surface)}
+.datum-row input:focus{border-color:var(--primary)}
+.load-btn{padding:8px 16px;border-radius:var(--rsm);border:1px solid var(--primary);background:var(--pl);color:var(--primary);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500}
+
+/* Empty */
+.empty{text-align:center;padding:40px 20px}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty-t{font-size:15px;font-weight:500;color:var(--text)}
+.empty-s{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* Live dot */
+.live{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#3B6D11;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.fb-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:4px}
+.fb-dot.ok{background:#3B6D11}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div>
+      <div class="hdr-t">🔧 Techniker — Tagesplan</div>
+      <div class="hdr-s"><span class="fb-dot" id="fb-dot"></span><span id="fb-txt">Verbinde...</span></div>
+    </div>
+    <div class="live"><div class="live-dot"></div>LIVE</div>
+  </div>
+
+  <!-- Datum wählen -->
+  <div class="datum-row">
+    <label>Datum:</label>
+    <input type="date" id="plan-datum">
+    <label>Name:</label>
+    <input type="text" id="plan-name" value="Kraus" style="width:100px">
+    <button class="load-btn" onclick="loadPlan()">📥 Laden</button>
+  </div>
+
+  <div id="status-bar" class="status-bar sb-wait">
+    <div class="sb-spin"></div>
+    <span>Warte auf Plan vom Chef...</span>
+  </div>
+
+  <div id="prog-wrap" style="display:none">
+    <div class="prog-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+    <div class="prog-lbl" id="prog-lbl"></div>
+  </div>
+
+  <div id="plan-list"></div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACQmAym8YcEJn9qy5RLK4J-SEGQQk4OAE",
+  authDomain: "aufzugprofi-scan.firebaseapp.com",
+  projectId: "aufzugprofi-scan",
+  storageBucket: "aufzugprofi-scan.firebasestorage.app",
+  messagingSenderId: "523189240129",
+  appId: "1:523189240129:web:1ee784a6d02ec4edcda1c0"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+document.getElementById('fb-dot').className='fb-dot ok';
+document.getElementById('fb-txt').textContent='Firebase verbunden ✓';
+
+window._db=db;
+window._doc=doc;
+window._getDoc=getDoc;
+window._setDoc=setDoc;
+window._onSnapshot=onSnapshot;
+window._fbReady=true;
+
+// Auto-laden beim Start
+setTimeout(()=>window.loadPlan&&window.loadPlan(),500);
+</script>
+
+<script>
+let currentPlan=null;
+let unsubscribe=null;
+
+document.getElementById('plan-datum').value=new Date().toISOString().slice(0,10);
+
+function openMap(s,n,c){
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s+' '+n+', '+c),'_blank');
+}
+
+async function loadPlan(){
+  if(!window._fbReady){setTimeout(loadPlan,500);return;}
+
+  const datum=document.getElementById('plan-datum').value;
+  const name=document.getElementById('plan-name').value.trim()||'Kraus';
+  const key=datum+'_'+name.toLowerCase();
+
+  // Alten Listener stoppen
+  if(unsubscribe) unsubscribe();
+
+  setStatus('wait','Lade Plan...');
+
+  // Live-Listener
+  const ref=window._doc(window._db,'tagespläne',key);
+  unsubscribe=window._onSnapshot(ref,(snap)=>{
+    if(!snap.exists()){
+      setStatus('wait','Noch kein Plan für dieses Datum vorhanden.\nWarte auf Chef...');
+      document.getElementById('prog-wrap').style.display='none';
+      document.getElementById('plan-list').innerHTML=`
+        <div class="empty">
+          <div class="empty-icon">⏳</div>
+          <div class="empty-t">Kein Plan vorhanden</div>
+          <div class="empty-s">Chef muss erst Adressen auswählen und senden</div>
+        </div>`;
+      return;
+    }
+    currentPlan=snap.data();
+    renderPlan();
+  });
+}
+
+function setStatus(type,msg){
+  const sb=document.getElementById('status-bar');
+  sb.className='status-bar sb-'+type;
+  sb.innerHTML=type==='wait'?`<div class="sb-spin"></div><span>${msg}</span>`:
+                type==='ok'?`<span>✓ ${msg}</span>`:`<span>✗ ${msg}</span>`;
+}
+
+function renderPlan(){
+  if(!currentPlan) return;
+  const items=currentPlan.adressen||[];
+  const done=items.filter(i=>i.done).length;
+  const total=items.length;
+  const pct=total?Math.round(done/total*100):0;
+
+  // Status
+  if(done===total&&total>0){
+    setStatus('ok',`Alle ${total} Adressen erledigt! 🎉`);
+  } else {
+    setStatus('ok',`Plan von Chef · ${currentPlan.tsDisplay||''}`);
+  }
+
+  // Fortschritt
+  const pw=document.getElementById('prog-wrap');
+  pw.style.display='';
+  const pb=document.getElementById('prog-bar');
+  pb.style.width=pct+'%';
+  pb.className='prog-bar'+(pct===100?' voll':'');
+  document.getElementById('prog-lbl').textContent=`${done} von ${total} erledigt · ${pct}%`;
+
+  // Liste
+  document.getElementById('plan-list').innerHTML=items.map((o,i)=>`
+    <div class="plan-item${o.done?' done':''}" id="pi${i}">
+      <div class="pi-top">
+        <div class="pi-num${o.done?' done':''}">${o.done?'✓':(i+1)}</div>
+        <div class="pi-info" onclick="toggleNotiz(${i})">
+          <div class="pi-street${o.done?' done':''}">${o.s} ${o.n}</div>
+          <div class="pi-meta">${o.c} · ${o._m||''} · ${o.t||''}</div>
+          ${o.bem?`<div class="pi-bem">📌 ${o.bem}</div>`:''}
+          ${o.done&&o.doneTs?`<div class="pi-done-time">✓ erledigt ${o.doneTs}</div>`:''}
+        </div>
+        <div class="pi-actions">
+          <button class="map-btn" onclick="openMap('${o.s}','${o.n}','${o.c}')">🗺</button>
+          <button class="chk-btn${o.done?' done':''}" onclick="toggleDone(${i})">
+            ${o.done?'✓':'○'}
+          </button>
+        </div>
+      </div>
+      <div class="pi-notiz" id="notiz${i}">
+        <textarea class="notiz-inp" id="notiz-inp${i}" placeholder="Bemerkung, Mängel, Material…">${o.meineNotiz||''}</textarea>
+        <button class="notiz-save" onclick="saveNotiz(${i})">💾 Speichern</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleNotiz(i){
+  const el=document.getElementById('notiz'+i);
+  el.classList.toggle('show');
+}
+
+async function toggleDone(i){
+  if(!currentPlan) return;
+  const items=[...currentPlan.adressen];
+  items[i].done=!items[i].done;
+  items[i].doneTs=items[i].done?new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'';
+
+  const datum=document.getElementById('plan-datum').value;
+  const name=document.getElementById('plan-name').value.trim()||'Kraus';
+  const key=datum+'_'+name.toLowerCase();
+
+  try {
+    await window._setDoc(window._doc(window._db,'tagespläne',key),{...currentPlan,adressen:items});
+  } catch(e){
+    console.error(e);
+  }
+}
+
+async function saveNotiz(i){
+  if(!currentPlan) return;
+  const items=[...currentPlan.adressen];
+  const el=document.getElementById('notiz-inp'+i);
+  items[i].meineNotiz=el?el.value.trim():'';
+
+  const datum=document.getElementById('plan-datum').value;
+  const name=document.getElementById('plan-name').value.trim()||'Kraus';
+  const key=datum+'_'+name.toLowerCase();
+
+  try {
+    await window._setDoc(window._doc(window._db,'tagespläne',key),{...currentPlan,adressen:items});
+    document.getElementById('notiz'+i).classList.remove('show');
+  } catch(e){ console.error(e); }
+}
+
+// Auto-laden
+window.loadPlan=loadPlan;
+</script>
+</body>
+</html>

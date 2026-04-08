@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AufzugProfi — Chef</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F8F8F6;--surface:#FFFFFF;--border:#E0DED8;
+  --primary:#3C3489;--pl:#EEEDFE;--pm:#534AB7;
+  --text:#1A1A18;--muted:#6B6966;
+  --green:#27500A;--gbg:#EAF3DE;--gborder:#97C459;
+  --red:#791F1F;--rbg:#FCEBEB;--rborder:#F09595;
+  --orange:#633806;--obg:#FAEEDA;--oborder:#EF9F27;
+  --radius:12px;--rsm:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+#app{max-width:700px;margin:0 auto;padding:14px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.hdr-t{font-size:19px;font-weight:600}
+.hdr-s{font-size:11px;color:var(--muted);margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.card-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+
+/* Suche */
+.search-wrap{position:relative;margin-bottom:8px}
+.search-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--rsm);font-size:15px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--primary)}
+.sugg{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);z-index:100;max-height:320px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1);display:none}
+.sugg.show{display:block}
+.si{padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.si:last-child{border-bottom:none}
+.si:hover,.si:active{background:var(--pl)}
+.si-info{flex:1}
+.si-street{font-size:14px;font-weight:500;color:var(--text)}
+.si-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.si-badge{padding:2px 8px;border-radius:8px;font-size:11px;font-weight:500;background:var(--pl);color:var(--primary);flex-shrink:0}
+.si-add{width:28px;height:28px;border-radius:50%;background:var(--primary);color:#EEEDFE;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.no-res{padding:14px;text-align:center;font-size:13px;color:var(--muted)}
+
+/* Ausgewählte Liste */
+.sel-list{min-height:60px}
+.sel-empty{text-align:center;padding:20px;color:var(--muted);font-size:13px;border:2px dashed var(--border);border-radius:var(--rsm)}
+.sel-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rsm);margin-bottom:6px;background:var(--surface);cursor:grab;transition:all .15s;user-select:none}
+.sel-item:active{cursor:grabbing;box-shadow:0 4px 12px rgba(0,0,0,.1);transform:scale(1.01)}
+.sel-item.dragging{opacity:.5;border-style:dashed}
+.sel-item.drag-over{border-color:var(--primary);background:var(--pl)}
+.drag-handle{color:var(--muted);font-size:16px;cursor:grab;flex-shrink:0;padding:2px 4px}
+.sel-num{width:24px;height:24px;border-radius:50%;background:var(--primary);color:#EEEDFE;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sel-info{flex:1;min-width:0}
+.sel-street{font-size:14px;font-weight:500;color:var(--text)}
+.sel-meta{font-size:12px;color:var(--muted);margin-top:1px}
+.sel-remove{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.sel-remove:hover{background:var(--rbg);color:var(--red)}
+
+/* Route Chips */
+.route-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rc{padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted)}
+.rc.has{background:var(--primary);border-color:var(--primary);color:#EEEDFE;font-weight:500}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;width:100%}
+.btn:active{transform:scale(0.98)}
+.btn-p{background:var(--primary);border-color:var(--primary);color:#EEEDFE}
+.btn-p:hover{background:var(--pm)}
+.btn-g{background:var(--gbg);border-color:var(--gborder);color:var(--green)}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+
+/* FB Status */
+.fb-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:4px}
+.fb-dot.ok{background:#3B6D11}
+
+/* Datum */
+.datum-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.datum-row label{font-size:13px;color:var(--muted);white-space:nowrap}
+.datum-row input{padding:8px 12px;border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none}
+.datum-row input:focus{border-color:var(--primary)}
+
+/* Bemerkung */
+.bem-inp{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;margin-top:6px}
+.bem-inp:focus{border-color:var(--primary)}
+
+/* Status Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:var(--rsm);font-size:13px;font-weight:500;z-index:999;display:none;white-space:nowrap}
+.toast.ok{background:var(--gbg);border:1px solid var(--gborder);color:var(--green);display:block}
+.toast.err{background:var(--rbg);border:1px solid var(--rborder);color:var(--red);display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div>
+      <div class="hdr-t">👔 Chef — Tagesplan</div>
+      <div class="hdr-s"><span class="fb-dot" id="fb-dot"></span><span id="fb-txt">Verbinde...</span></div>
+    </div>
+    <a href="index.html" style="font-size:12px;color:var(--primary);text-decoration:none">← Start</a>
+  </div>
+
+  <!-- Datum -->
+  <div class="card">
+    <div class="card-lbl">Datum & Techniker</div>
+    <div class="datum-row">
+      <label>Datum:</label>
+      <input type="date" id="plan-datum">
+      <label>Für:</label>
+      <input type="text" id="plan-tech" placeholder="z.B. Kraus" style="flex:1">
+    </div>
+  </div>
+
+  <!-- Suche -->
+  <div class="card">
+    <div class="card-lbl">Adressen suchen & hinzufügen</div>
+    <div class="search-wrap">
+      <input class="search-input" id="search" placeholder="Straße, Nr. oder Stadt eingeben…"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="onSearch()" onfocus="onSearch()" onblur="hideDelay()">
+      <div class="sugg" id="sugg"></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">Tipp: "Pr" findet zuerst <strong>Pr</strong>omenade, dann Horn<strong>sch</strong>uchpromenade</div>
+  </div>
+
+  <!-- Route Übersicht -->
+  <div class="card">
+    <div class="card-lbl">Route-Übersicht</div>
+    <div class="route-chips" id="route-chips"></div>
+  </div>
+
+  <!-- Ausgewählte Liste -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="card-lbl" style="margin:0">Tagesplan (<span id="sel-count">0</span> Adressen)</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" onclick="sortRoute()">🗺 Route sortieren</button>
+        <button class="btn btn-sm" style="color:var(--red)" onclick="clearAll()">✕ Alle</button>
+      </div>
+    </div>
+    <div id="sel-list">
+      <div class="sel-empty">Noch keine Adressen. Oben suchen und hinzufügen.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="sendPlan()" id="btn-send">📤 An Techniker senden</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACQmAym8YcEJn9qy5RLK4J-SEGQQk4OAE",
+  authDomain: "aufzugprofi-scan.firebaseapp.com",
+  projectId: "aufzugprofi-scan",
+  storageBucket: "aufzugprofi-scan.firebasestorage.app",
+  messagingSenderId: "523189240129",
+  appId: "1:523189240129:web:1ee784a6d02ec4edcda1c0"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+document.getElementById('fb-dot').className='fb-dot ok';
+document.getElementById('fb-txt').textContent='Firebase verbunden ✓';
+
+window._db=db;
+window._doc=doc;
+window._setDoc=setDoc;
+window._getDoc=getDoc;
+window._fbReady=true;
+</script>
+
+<script>
+// ══ DATEN ════════════════════════════════════════════════════════
+const DATA={"M1":[{"s":"Adlerstr.","n":"4-8","c":"Nürnberg","t":"PA"},{"s":"Allersberger Str.","n":"70","c":"Nürnberg","t":"PA"},{"s":"Großweidenmühlstr.","n":"14-16","c":"Nürnberg","t":"PA"},{"s":"Königstr.","n":"135","c":"Fürth","t":"LA"},{"s":"Königstr.","n":"55","c":"Nürnberg","t":"PA"},{"s":"Königstr.","n":"80","c":"Nürnberg","t":"PA"},{"s":"Rudolf-Breitscheid-Str.","n":"45","c":"Fürth","t":"PA"},{"s":"Sandstr.","n":"27","c":"Nürnberg","t":"PA"},{"s":"Siemensstr/Ajotschstr.","n":"48/1","c":"Nürnberg","t":"PA"},{"s":"St. Johann","n":"2-10","c":"Erlangen","t":"LA"},{"s":"Wilhelm-Albrecht-Str.","n":"6","c":"Schwabach","t":"PA"}],"M2":[{"s":"Allersberger Str.","n":"185","c":"Nürnberg","t":"PA"},{"s":"Am Rathaus","n":"1","c":"Oberasbach","t":"PA"},{"s":"Amalienstr.","n":"43","c":"Nürnberg","t":"PA"},{"s":"Amalienstr.","n":"45 47","c":"Fürth","t":"PA"},{"s":"Atrium","n":"0","c":"Fürth","t":"PA"},{"s":"Bahnhofstr.","n":"14","c":"Ebermannstadt","t":"PA"},{"s":"Bayreuther Str.","n":"53","c":"Erlangen","t":"PA"},{"s":"Bernhard von Weimar","n":"3 5 7 9","c":"Fürth","t":"PA"},{"s":"Bohnenstr.","n":"23","c":"Fürth","t":"PA"},{"s":"Breitscheid/Pillenreuther","n":"5 2","c":"Nürnberg","t":"PA"},{"s":"Brückenstr.","n":"10 12","c":"Nürnberg","t":"PA"},{"s":"Emillienstr.","n":"10","c":"Nürnberg","t":"PA"},{"s":"Eschenstr.","n":"25","c":"Nürnberg","t":"LA"},{"s":"Essenbacher Str.","n":"15","c":"Erlangen","t":"PA"},{"s":"Frankenstr.","n":"15","c":"Nürnberg","t":"PA"},{"s":"Friedrich Str.","n":"10","c":"Fürth","t":"LA"},{"s":"Frühlingsstr.","n":"1","c":"Weiherhof","t":"PA"},{"s":"Fürther Str.","n":"53","c":"Nürnberg","t":"PA"},{"s":"Händelstr.","n":"12","c":"Fürth","t":"PA"},{"s":"Händelstr.","n":"22","c":"Fürth","t":"PA"},{"s":"Hirschstr.","n":"3","c":"Fürth","t":"PA"},{"s":"Hummelsheimer Weg","n":"65","c":"Nürnberg","t":"PA"},{"s":"Industriestr.","n":"21","c":"Nürnberg","t":"LA"},{"s":"Johannesgasse","n":"14","c":"Nürnberg","t":"PA"},{"s":"KG","n":"5","c":"Fürth","t":"PA"},{"s":"KG","n":"6","c":"Fürth","t":"PA"},{"s":"KG","n":"7","c":"Fürth","t":"PA"},{"s":"Klingenhofstr.","n":"50","c":"Nürnberg","t":"PA"},{"s":"Königstr.","n":"63","c":"Nürnberg","t":"PA"},{"s":"Königswarter","n":"58","c":"Fürth","t":"LA"},{"s":"Kopernikusplatz","n":"14","c":"Nürnberg","t":"PA"},{"s":"Kopernikusplatz","n":"7","c":"Nürnberg","t":"PA"},{"s":"Kupferstr.","n":"32","c":"Nürnberg","t":"PA"},{"s":"Ludwig-Quellen-Str.","n":"20","c":"Fürth","t":"PA"},{"s":"Marilenstr.","n":"20","c":"Nürnberg","t":"PA"},{"s":"Ostium","n":"0","c":"Fürth","t":"PA"},{"s":"Passauer Str.","n":"7","c":"Nürnberg","t":"PA"},{"s":"Platensstr.BAMF","n":"30","c":"Nürnberg","t":"PA"},{"s":"Poppenreuther Str.","n":"67/69","c":"Nürnberg","t":"PA"},{"s":"Regensburger Str.","n":"334","c":"Nürnberg","t":"PA"},{"s":"Regensburger Str.","n":"44-46","c":"Nürnberg","t":"LA"},{"s":"Rennweg","n":"50","c":"Nürnberg","t":"PA"},{"s":"Spitalgasse","n":"3","c":"Nürnberg","t":"PA"},{"s":"Stabiustr.","n":"13","c":"Nürnberg","t":"PA"},{"s":"Stuibenweg","n":"1 3 5","c":"Nürnberg","t":"PA"},{"s":"Technikum  Dr. Mackstr.","n":"1","c":"Fürth","t":"LA"},{"s":"Trivium Kantine","n":"0","c":"Fürth","t":"PA"},{"s":"Trivium Treppenhaus","n":"0","c":"Fürth","t":"PA"},{"s":"Wanderer Str.","n":"9","c":"Nürnberg","t":"PA"},{"s":"Wiesentalstr.","n":"46","c":"Nürnberg","t":"PA"},{"s":"Zeltnerstr.","n":"7","c":"Nürnberg","t":"PA"},{"s":"Pillenreuther Str.","n":"2","c":"Nürnberg","t":"PA"}],"M3":[{"s":"Adlersteinweg","n":"2-6","c":"Erlangen","t":"PA"},{"s":"Allersberger Str","n":"185","c":"Nürnberg","t":"PA"},{"s":"Allersberger Str","n":"73","c":"Nürnberg","t":"PA"},{"s":"Alte Reutstr.  Im Stöckig","n":"136","c":"Fürth","t":"PA"},{"s":"Am Bahnhofstr","n":"13","c":"Uffenheim","t":"LA"},{"s":"Am Karlberg","n":"3","c":"Fürth","t":"PA"},{"s":"Am Kellerberg","n":"22 b c","c":"Höchstadt","t":"PA"},{"s":"Am Klosterbach","n":"1 3 5 7 9","c":"Nürnberg","t":"PA"},{"s":"Am Messenhaus","n":"8","c":"Nürnberg","t":"PA"},{"s":"Am Rathaus","n":"5-7","c":"Oberasbach","t":"PA"},{"s":"Am Schreiberholzstr","n":"2","c":"Zirndorf","t":"PA"},{"s":"Am Schreiberholzstr","n":"2a","c":"Zirndorf","t":"PA"},{"s":"Am Stadtpark","n":"21  23","c":"Nürnberg","t":"PA"},{"s":"Am Stadtpark","n":"99","c":"Nürnberg","t":"PA"},{"s":"Am Tower","n":"5","c":"Nürnberg","t":"PA"},{"s":"Ammanstr","n":"24","c":"Nürnberg","t":"PA"},{"s":"Ansbacher Str","n":"127 129 131 133","c":"Nürnberg","t":"PA"},{"s":"Anton-Bruckner-Str","n":"36-42","c":"Erlangen","t":"PA"},{"s":"Arndstr","n":"5 7","c":"Nürnberg","t":"PA"},{"s":"Äußere Sulzbacher Str","n":"37","c":"Nürnberg","t":"PA"},{"s":"Äußere Sulzbacher Str","n":"53","c":"Nürnberg","t":"PA"},{"s":"Austr","n":"2","c":"Fürth","t":"PA"},{"s":"Bad Brückenauer Str","n":"39","c":"Nürnberg","t":"PA"},{"s":"Badstr","n":"13-15 18","c":"Fürth","t":"PA"},{"s":"Bahnhofplatz","n":"8","c":"Ansbach","t":"PA"},{"s":"Barbarossaweg","n":"3","c":"Hagenbüchach","t":"PA"},{"s":"Bärenschanzstr","n":"8","c":"Nürnberg","t":"PA"},{"s":"Bayernstr","n":"47","c":"Fürth","t":"PA"},{"s":"Berliner Platz","n":"4","c":"Nürnberg","t":"PA"},{"s":"Bernbacher Str","n":"98","c":"Fürth","t":"LA"},{"s":"Bernbacher Str","n":"98","c":"Fürth","t":"PA"},{"s":"Berolzheimer Str","n":"17 19","c":"Nürnberg","t":"PA"},{"s":"Berolzheimer Str","n":"1 3","c":"Nürnberg","t":"PA"},{"s":"Bertolt-Brecht-Str","n":"52-80","c":"Nürnberg","t":"PA"},{"s":"Birkenstr","n":"2","c":"Siegelsdorf","t":"PA"},{"s":"Blücherstr","n":"47b","c":"Nürnberg","t":"PA"},{"s":"Blücherstr","n":"57","c":"Nürnberg","t":"PA"},{"s":"Brückenstr","n":"16","c":"Nürnberg","t":"PA"},{"s":"Brückenstr","n":"18","c":"Nürnberg","t":"PA"},{"s":"Brückenstr","n":"22","c":"Nürnberg","t":"PA"},{"s":"Bucherstr","n":"27","c":"Nürnberg","t":"PA"},{"s":"Bulmannstr","n":"46","c":"Nürnberg","t":"PA"},{"s":"Burgfarrenbacher Str","n":"105","c":"Zirndorf","t":"LA"},{"s":"Burgschmiedstr","n":"40","c":"Nürnberg","t":"PA"},{"s":"Coseler Str","n":"12","c":"Fürth","t":"PA"},{"s":"Coseler Str","n":"14","c":"Fürth","t":"PA"},{"s":"Coseler Str","n":"16","c":"Fürth","t":"PA"},{"s":"Cuxhavenen Str","n":"67 69","c":"Nürnberg","t":"PA"},{"s":"Dachsbacher Weg","n":"1","c":"Diespeck","t":"PA"},{"s":"Deutschherrnkaree","n":"15-19","c":"Nürnberg","t":"PA"},{"s":"Dieslstr","n":"19","c":"Fürth","t":"LA"},{"s":"Dompfaffstr","n":"136","c":"Erlangen","t":"PA"},{"s":"Dorfäckerstr","n":"41","c":"Nürnberg","t":"PA"},{"s":"Dr. Kurt-Schumacher-Str","n":"9","c":"Nürnberg","t":"PA"},{"s":"Dreichlinger Str","n":"47","c":"Neumarkt","t":"PA"},{"s":"Düsseldorfer Str","n":"51 53","c":"Nürnberg","t":"PA"},{"s":"Edisonstr","n":"24","c":"Nürnberg","t":"LA"},{"s":"Edisonstr","n":"26","c":"Nürnberg","t":"LA"},{"s":"Eichenfeldstr","n":"9 11 13","c":"Oberasbach","t":"PA"},{"s":"Erlenstr","n":"14","c":"Nürnberg","t":"LA"},{"s":"Erlenstr","n":"28","c":"Nürnberg","t":"LA"},{"s":"Erlenstr","n":"36","c":"Nürnberg","t":"PA"},{"s":"Eschenstr  Bau 5","n":"36","c":"Nürnberg","t":"LA"},{"s":"Eskilstunastr","n":"38","c":"Erlangen","t":"PA"},{"s":"Fenitzer Str","n":"37","c":"Nürnberg","t":"PA"},{"s":"Fenitzerplatz","n":"0","c":"Nürnberg","t":"PA"},{"s":"Fichtestr","n":"3","c":"Nürnberg","t":"PA"},{"s":"Franzstr","n":"15","c":"Nürnberg","t":"PA"},{"s":"Friedrich-König-Weg","n":"14","c":"Zirndorf","t":"PA"},{"s":"Friedrichstr","n":"8","c":"Nürnberg","t":"PA"},{"s":"Friedrich-Weller-Platz","n":"2","c":"Herzogenaurach","t":"PA"},{"s":"Friesenstr","n":"10","c":"Nürnberg","t":"PA"},{"s":"Further Freiheit","n":"2-4","c":"Fürth","t":"PA"},{"s":"Further Str","n":"3","c":"Nürnberg","t":"PA"},{"s":"Further Str","n":"321-325","c":"Nürnberg","t":"PA"},{"s":"Further Str","n":"33","c":"Zirndorf","t":"LA"},{"s":"Further Str","n":"94","c":"Nürnberg","t":"PA"},{"s":"Further Str","n":"330  332","c":"Nürnberg","t":"PA"},{"s":"Gabelsberger Str","n":"23","c":"Nürnberg","t":"PA"},{"s":"Gabelsberger Str","n":"49","c":"Nürnberg","t":"PA"},{"s":"Gallastr","n":"3 5","c":"Zirndorf","t":"PA"},{"s":"Gärtnerstr","n":"17","c":"Nürnberg","t":"PA"},{"s":"Gebhardstr","n":"45","c":"Fürth","t":"PA"},{"s":"Gebhardstr","n":"41 43","c":"Fürth","t":"LA"},{"s":"Georg-Brandstätter-Str","n":"9","c":"Fürth","t":"PA"},{"s":"Gebhardstr","n":"37","c":"Fürth","t":"LA"},{"s":"Gellerstr","n":"6","c":"Nürnberg","t":"PA"},{"s":"Geschwister-Schollstr","n":"10 12","c":"Erlangen","t":"PA"},{"s":"Gewerbering","n":"9","c":"Röttenbach","t":"PA"},{"s":"Gewerbestr","n":"11","c":"Cadolzburg","t":"PA"},{"s":"Glockenhofstr","n":"14","c":"Nürnberg","t":"PA"},{"s":"Goethering","n":"30","c":"Stein","t":"PA"},{"s":"Goethering","n":"36","c":"Stein","t":"PA"},{"s":"Gottfriedstr.","n":"18 22","c":"Nürnberg","t":"PA"},{"s":"Grillparzerstr","n":"3","c":"Fürth","t":"PA"},{"s":"Grolandstr","n":"12","c":"Nürnberg","t":"PA"},{"s":"Großweidenmühlstr","n":"24-34","c":"Nürnberg","t":"PA"},{"s":"Guntherstr","n":"63","c":"Nürnberg","t":"PA"},{"s":"Gustav-Weißkopf-Str","n":"13-15","c":"Nürnberg","t":"PA"},{"s":"Gustav-Weißkopf-Str","n":"19","c":"Nürnberg","t":"PA"},{"s":"Guttenbergstr","n":"19","c":"Zirndorf","t":"PA"},{"s":"Habichtstr","n":"12","c":"Nürnberg","t":"PA"},{"s":"Hallerstr","n":"42","c":"Nürnberg","t":"PA"},{"s":"Hallerwiese","n":"12","c":"Nürnberg","t":"PA"},{"s":"Hansastraße","n":"4","c":"Schwabach","t":"PA"},{"s":"Hans-Böckler-Str","n":"22 24 26","c":"Fürth","t":"PA"},{"s":"Hauptstr","n":"26a","c":"Herzogenaurach","t":"PA"},{"s":"Hauptstr","n":"8","c":"Adelsdorf","t":"PA"},{"s":"Hauptstr","n":"27","c":"Stein","t":"PA"},{"s":"Heideloffstr","n":"136","c":"Nürnberg","t":"LA"},{"s":"Heinestr","n":"9","c":"Zirndorf","t":"PA"},{"s":"Herderstr","n":"11-19","c":"Nürnberg","t":"PA"},{"s":"Herrnstr","n":"98","c":"Fürth","t":"PA"},{"s":"Herschelstr","n":"15","c":"Nürnberg","t":"PA"},{"s":"Hintere Marktstr","n":"84","c":"Nürnberg","t":"PA"},{"s":"Hirschelgasse","n":"1","c":"Nürnberg","t":"PA"},{"s":"Höfener Str","n":"28","c":"Fürth","t":"PA"},{"s":"Holzgartenstr","n":"15","c":"Nürnberg","t":"PA"},{"s":"Hornschuchpromenade","n":"15","c":"Fürth","t":"PA"},{"s":"Hornschuchpromenade","n":"19","c":"Fürth","t":"PA"},{"s":"Humboldstr","n":"100","c":"Nürnberg","t":"PA"},{"s":"Humboldstr","n":"59","c":"Nürnberg","t":"PA"},{"s":"Hummelsteiner Weg","n":"73 75 77","c":"Nürnberg","t":"PA"},{"s":"Im Heuschlag","n":"7 9 11","c":"Erlangen","t":"PA"},{"s":"Industriestr","n":"20","c":"Nürnberg","t":"LA"},{"s":"Jagdstr.17 Roritzerstr. 9","n":"17 19 21","c":"Nürnberg","t":"PA"},{"s":"Jakobstr 52-Anna-Haus","n":"52","c":"Nürnberg","t":"PA"},{"s":"Jenaer Str","n":"4-10","c":"Oberasbach","t":"PA"},{"s":"Jochensteinstr","n":"2 4 4a","c":"Nürnberg","t":"PA"},{"s":"Johannisstr","n":"84","c":"Nürnberg","t":"PA"},{"s":"Josephsplatz","n":"18","c":"Nürnberg","t":"PA"},{"s":"Judengasse","n":"22","c":"Nürnberg","t":"PA"},{"s":"Julius-Loßmannsstr","n":"108/110","c":"Nürnberg","t":"PA"},{"s":"Kaisersstr","n":"175","c":"Fürth","t":"PA"},{"s":"Karl-Jatho-Weg","n":"1 3 5","c":"Nürnberg","t":"PA"},{"s":"Karl-Jatho-Weg","n":"13 15","c":"Nürnberg","t":"PA"},{"s":"Karl-Matell-Str","n":"35","c":"Nürnberg","t":"PA"},{"s":"Karl-May-Str","n":"14 16","c":"Erlangen","t":"PA"},{"s":"Karl-Seifert-Str","n":"1-5","c":"Oberreichenbach","t":"PA"},{"s":"Karlsr","n":"27","c":"Fürth","t":"PA"},{"s":"Karlsr 5 Bendlstr  6","n":"5 6","c":"Fürth","t":"PA"},{"s":"Kesslerplatz","n":"19","c":"Nürnberg","t":"PA"},{"s":"Kesslerplatz","n":"1a","c":"Nürnberg","t":"PA"},{"s":"Kilianstr","n":"183","c":"Nürnberg","t":"PA"},{"s":"Kirchenstr","n":"24  24a","c":"Nürnberg","t":"PA"},{"s":"Kirchenweg","n":"14 16 18 20","c":"Nürnberg","t":"PA"},{"s":"Kirschgartenstr","n":"1 3  5","c":"Nürnberg","t":"PA"},{"s":"Kirschgartenstr","n":"48","c":"Nürnberg","t":"PA"},{"s":"Koberger Str","n":"33","c":"Nürnberg","t":"PA"},{"s":"Kohlenmarkt","n":"4","c":"Fürth","t":"PA"},{"s":"Konferenzstr","n":"2","c":"Puschendorf","t":"PA"},{"s":"Konferenzstr","n":"4","c":"Puschendorf","t":"PA"},{"s":"Königsberger Str","n":"5","c":"Fürth","t":"PA"},{"s":"Königsberger Str","n":"7","c":"Fürth","t":"PA"},{"s":"Königswarterstr","n":"16","c":"Fürth","t":"PA"},{"s":"Konstanzensstr","n":"82-84b","c":"Nürnberg","t":"PA"},{"s":"Kopernikusplatz","n":"5","c":"Nürnberg","t":"AA"},{"s":"Kopernikusplatz","n":"5","c":"Nürnberg","t":"PA"},{"s":"Kopernikuststr","n":"18","c":"Nürnberg","t":"PA"},{"s":"Koppenplatz","n":"2","c":"Zirndorf","t":"PA"},{"s":"Krellingstr","n":"20-24","c":"Nürnberg","t":"PA"},{"s":"Künhoferstr","n":"7","c":"Nürnberg","t":"PA"},{"s":"Kutzerstr","n":"12","c":"Nürnberg","t":"PA"},{"s":"Lange Gasse","n":"73 75","c":"Fürth","t":"PA"},{"s":"Lange Str","n":"74","c":"Fürth","t":"PA"},{"s":"Lange Str","n":"12 14","c":"Nürnberg","t":"PA"},{"s":"Lange Zelle","n":"6-8","c":"Nürnberg","t":"PA"},{"s":"Lange Zelle","n":"12","c":"Nürnberg","t":"PA"},{"s":"Lebrunweg","n":"3","c":"Stein","t":"PA"},{"s":"Leibnitzstr","n":"22","c":"Nürnberg","t":"PA"},{"s":"Lenzenstr","n":"4","c":"Wilhermsdorf","t":"LA"},{"s":"Leonrodweg","n":"10","c":"Stein","t":"PA"},{"s":"Linnestr","n":"13","c":"Nürnberg","t":"PA"},{"s":"Löffelholzstr","n":"20","c":"Nürnberg","t":"PA"},{"s":"Löffelholzstr","n":"21","c":"Nürnberg","t":"LA"},{"s":"Ludwig-Feuerbach Str","n":"42","c":"Nürnberg","t":"KGA"},{"s":"Ludwigsplatz","n":"7","c":"Nürnberg","t":"PA"},{"s":"Markgrafenstr","n":"27","c":"Nürnberg","t":"PA"},{"s":"Martin-Albert-Str","n":"1","c":"Nürnberg","t":"PA"},{"s":"Märzenweg","n":"22","c":"Zirndorf","t":"PA"},{"s":"Mathildenstr","n":"10","c":"Nürnberg","t":"PA"},{"s":"Mauerstr","n":"20","c":"Fürth","t":"PA"},{"s":"Maxfeldstr","n":"46/48","c":"Nürnberg","t":"PA"},{"s":"Meuschelstr","n":"49","c":"Nürnberg","t":"PA"},{"s":"Moststr","n":"29","c":"Fürth","t":"PA"},{"s":"Motterstr","n":"4-10","c":"Nürnberg","t":"PA"},{"s":"Muggenhoferstr","n":"136","c":"Nürnberg","t":"PA"},{"s":"Mühlstr","n":"4-10","c":"Stein","t":"PA"},{"s":"Mühlstr","n":"42","c":"Zirndorf","t":"PA"},{"s":"Müllweg","n":"50","c":"Nürnberg","t":"PA"},{"s":"Neunkirchener Str  Gymn","n":"1","c":"Eckental","t":"PA"},{"s":"Neuroder Str","n":"9","c":"Nürnberg","t":"PA"},{"s":"Neuwiederstr","n":"15","c":"Nürnberg","t":"PA"},{"s":"Nietzschesstr","n":"10","c":"Nürnberg","t":"PA"},{"s":"Nimrodstr","n":"9","c":"Nürnberg","t":"LA"},{"s":"Nopitschstr","n":"63","c":"Nürnberg","t":"LA"},{"s":"Nordliche Ring-Str","n":"12","c":"Schwabach","t":"PA"},{"s":"Nordostpark","n":"16","c":"Nürnberg","t":"PA"},{"s":"Nordring","n":"171 173 175 177","c":"Nürnberg","t":"KGA"},{"s":"Nordring","n":"136-138","c":"Nürnberg","t":"PA"},{"s":"Nordring","n":"148 150 152 154","c":"Nürnberg","t":"PA"},{"s":"Nordwestring","n":"104","c":"Nürnberg","t":"PA"},{"s":"Noriker Str","n":"25","c":"Nürnberg","t":"LA"},{"s":"Norikerstr","n":"19","c":"Nürnberg","t":"PA"},{"s":"Nürnberger Str","n":"101 105","c":"Fürth","t":"PA"},{"s":"Nürnberger Str","n":"18","c":"Fürth","t":"PA"},{"s":"Nürnberger Str","n":"29a","c":"Zirndorf","t":"PA"},{"s":"Nürnberger Str","n":"47","c":"Langen","t":""},{"s":"Obermaierstr","n":"10","c":"Nürnberg","t":"PA"},{"s":"Oedenbergerstr","n":"144 146","c":"Nürnberg","t":"PA"},{"s":"Officium Dr. Mack Str","n":"88","c":"Fürth","t":"PA"},{"s":"Persifalstr","n":"24 26","c":"Nürnberg","t":"DA"},{"s":"Pestalozzistr","n":"10","c":"Nürnberg","t":"PA"},{"s":"Peter Henleinst","n":"44","c":"Nürnberg","t":"PA"},{"s":"Pfannenschmiedgasse","n":"12","c":"Cadolzburg","t":"LA"},{"s":"Pfannenstielstr","n":"14","c":"Cadolzburg","t":"LA"},{"s":"Pfarrer Blank Weg","n":"7 9","c":"Hagenbüchach","t":"PA"},{"s":"Pirckheimer Str","n":"47","c":"Nürnberg","t":"PA"},{"s":"Pirckheimer Str","n":"90 94","c":"Nürnberg","t":"PA"},{"s":"Platenstr","n":"46","c":"Nürnberg","t":"PA"},{"s":"Poppenreuther Str","n":"49/49","c":"Nürnberg","t":"PA"},{"s":"Promenade","n":"30","c":"Ansbach","t":"PA"},{"s":"Promenade","n":"9","c":"Ansbach","t":"PA"},{"s":"Querstr","n":"4","c":"Wendelstein","t":"PA"},{"s":"Rathenau str","n":"18","c":"Erlangen","t":"LA"},{"s":"Rednitzstr","n":"86-92","c":"Nürnberg","t":"PA"},{"s":"Redtenbacher22/Adam-Kle","n":"22 24","c":"Nürnberg","t":"PA"},{"s":"Regensburger Str","n":"36/38","c":"Nürnberg","t":"PA"},{"s":"Rennweg","n":"21","c":"Nürnberg","t":"PA"},{"s":"Rennweg","n":"35","c":"Nürnberg","t":"LA"},{"s":"Rennweg","n":"35-37","c":"Nürnberg","t":"PA"},{"s":"Rierestr","n":"34","c":"Nürnberg","t":"PA"},{"s":"Rierestr","n":"17 19 21 25 27","c":"Nürnberg","t":"PA"},{"s":"Rilkestr","n":"24 26 28","c":"Nürnberg","t":"PA"},{"s":"Ringstr","n":"47a","c":"Neumarkt","t":"PA"},{"s":"Rothenburger Str","n":"25","c":"Oberasbach","t":"PA"},{"s":"Rückerstr","n":"14","c":"Nürnberg","t":"PA"},{"s":"Rudolf-Breitscheid-Str","n":"21","c":"Fürth","t":"PA"},{"s":"Rudolf-Breitscheid-Str","n":"47","c":"Fürth","t":"PA"},{"s":"Rüglander Str","n":"5","c":"Ansbach","t":"PA"},{"s":"Saalfelder Str","n":"22a","c":"Oberasbach","t":"PA"},{"s":"Sandrarstr","n":"36 38","c":"Nürnberg","t":"PA"},{"s":"Schillerstr","n":"23","c":"Nürnberg","t":"PA"},{"s":"Schillerstr","n":"41","c":"Stein","t":"PA"},{"s":"Schlesiestr","n":"36","c":"Neustatt","t":"PA"},{"s":"Schloßstr","n":"42","c":"Nürnberg","t":"PA"},{"s":"Schnieglinger Str","n":"232","c":"Nürnberg","t":"PA"},{"s":"Schulstr","n":"11","c":"Fürth","t":"PA"},{"s":"Schultheißallee","n":"63 65","c":"Nürnberg","t":"PA"},{"s":"Schützengraben","n":"62","c":"Herzogenaurach","t":"PA"},{"s":"Schwabacher Str","n":"206/208","c":"Fürth","t":"PA"},{"s":"Schwabacher Str","n":"46","c":"Fürth","t":"PA"},{"s":"Schweinauer Hauptstr","n":"27","c":"Nürnberg","t":"PA"},{"s":"Seeleinbühlstr","n":"28","c":"Nürnberg","t":"PA"},{"s":"Siegfriedstr","n":"62","c":"Nürnberg","t":"PA"},{"s":"Siegitzhofer Str","n":"32 34 36","c":"Erlangen","t":"PA"},{"s":"Siemenstätter Str","n":"2-20","c":"Fürth","t":"PA"},{"s":"Spitalhof","n":"5","c":"Nürnberg","t":"PA"},{"s":"St. Anna-Str","n":"1","c":"Neumarkt","t":"PA"},{"s":"St. Johann","n":"2-4","c":"Erlangen","t":"LA"},{"s":"Steibweg","n":"1-6","c":"Nürnberg","t":"PA"},{"s":"Steinbühlstr","n":"5","c":"Forchheim","t":"PA"},{"s":"Steiner Weg","n":"69-73","c":"Nürnberg","t":"PA"},{"s":"Steiner Weg","n":"75 77 79 81 83","c":"Nürnberg","t":"PA"},{"s":"Stephanstr","n":"41","c":"Nürnberg","t":"PA"},{"s":"Stresemannplatz","n":"11","c":"Nürnberg","t":"PA"},{"s":"Sulzbacher Str","n":"22","c":"Nürnberg","t":"PA"},{"s":"Tannenstr","n":"3 5","c":"Fürth","t":"PA"},{"s":"Tassilostr","n":"15","c":"Nürnberg","t":"PA"},{"s":"Taurogenerstr","n":"1  3","c":"Nürnberg","t":"PA"},{"s":"Theresienstr","n":"17","c":"Fürth","t":"PA"},{"s":"Thumenberger Weg","n":"27","c":"Nürnberg","t":"PA"},{"s":"Tilmann-Riemenschneider","n":"0","c":"Höchstadt","t":"PA"},{"s":"Triftstr","n":"7","c":"Neumarkt","t":"PA"},{"s":"Tuchergartenstr","n":"8","c":"Nürnberg","t":"PA"},{"s":"Tucherstr","n":"10","c":"Fürth","t":"PA"},{"s":"Tucherstr","n":"8","c":"Fürth","t":"KGA"},{"s":"Türkeistr","n":"11","c":"Altdorf","t":"PA"},{"s":"Ulmenweg","n":"17 19","c":"Erlangen","t":"PA"},{"s":"Untere Schmiedgasse","n":"8","c":"Nürnberg","t":"PA"},{"s":"Urlashöhe","n":"10","c":"Lauf","t":"PA"},{"s":"Vacher Str","n":"25","c":"Oberm","t":"PA"},{"s":"Vacher Str","n":"5 7","c":"Fürth","t":"PA"},{"s":"Valentin Dretzel-Str","n":"18-24","c":"Nürnberg","t":"PA"},{"s":"Virchowstr","n":"27","c":"Nürnberg","t":"PA"},{"s":"Waldstr","n":"37","c":"Fürth","t":"PA"},{"s":"Wallensteinstr","n":"82-86","c":"Nürnberg","t":"PA"},{"s":"Webersplatz","n":"2","c":"Nürnberg","t":"PA"},{"s":"Weihergasse","n":"6","c":"Veitsbronn","t":"LA"},{"s":"Weiherhofer Hauptstr","n":"65 67","c":"Zirndorf","t":"PA"},{"s":"Weiherhofer Hauptstr","n":"69 71","c":"Zirndorf","t":"PA"},{"s":"Weizenstr","n":"3","c":"Fürth","t":"PA"},{"s":"Wertachstr","n":"27","c":"Nürnberg","t":"PA"},{"s":"Wiesentalstr","n":"24","c":"Nürnberg","t":"PA"},{"s":"Willelm Marx-Str","n":"8","c":"Nürnberg","t":"LA"},{"s":"Willhelmshav Str","n":"15 17","c":"Fürth","t":"PA"},{"s":"Willstätterstr","n":"30","c":"Nürnberg","t":"PA"},{"s":"Zeppelinstr","n":"10","c":"Fürth","t":"PA"},{"s":"Zerzabelshofstr","n":"21 23 25","c":"Nürnberg","t":"PA"},{"s":"Ziegelhüttenweg","n":"28  28a  28b","c":"Neumarkt","t":"PA"},{"s":"Zirndorfer Str","n":"1 3  5 7","c":"Oberasbach","t":"PA"},{"s":"Zufuhrstr","n":"12","c":"Nürnberg","t":"LA"},{"s":"Zugspitzstr","n":"96  98","c":"Nürnberg","t":"PA"},{"s":"Nürnberger Str","n":"15a","c":"Fürth","t":"PA"},{"s":"Platenstr","n":"3a","c":"Nürnberg","t":"PA"},{"s":"Kirschgartenstr","n":"4","c":"Nürnberg","t":"PA"}],"M4":[{"s":"Beckchlagergasse","n":"6","c":"Nürnberg","t":"PA"},{"s":"Collegiengasse","n":"2","c":"Altdorf","t":"PA"},{"s":"Rednitzstr.","n":"86-92","c":"Nürnberg","t":"PA"},{"s":"Schießhausplatz","n":"2","c":"Langen","t":"LA"},{"s":"Stadelner Hauptstr","n":"34","c":"Fürth","t":"KGA"},{"s":"Winklerstr.","n":"31","c":"Nürnberg","t":"PA"},{"s":"Zwickauer Str.","n":"8","c":"Oberasbach","t":"PA"}],"M6":[{"s":"Andernacher Str","n":"5a","c":"Nürnberg","t":"LA"},{"s":"Allersberger Str","n":"185","c":"Nürnberg","t":"PA"},{"s":"Am Deckersweiler","n":"24","c":"Erlangen","t":"LA"},{"s":"Am Steinacher Kreuz","n":"22","c":"Nürnberg","t":"PA"},{"s":"Dr. Otto-Leich-Str","n":"16","c":"Eckental","t":"LA"},{"s":"Egerstr","n":"12 a","c":"Baiersdorf","t":"LA"},{"s":"Essenbacher Str","n":"23","c":"Erlangen","t":"LA"},{"s":"Höfener Str","n":"10-14","c":"Fürth","t":"PA"},{"s":"Mostgasse","n":"11a","c":"Nürnberg","t":"PA"},{"s":"Officium","n":"0","c":"Fürth","t":"PA"},{"s":"Platnersgasse","n":"9","c":"Nürnberg","t":"KGA"},{"s":"Regensburger Str","n":"40-46","c":"Nürnberg","t":"PA"},{"s":"Schnepfenreuther Weg","n":"28","c":"Nürnberg","t":"PA"},{"s":"Schützengraben","n":"62","c":"Herzog","t":"PA"},{"s":"Theatrum","n":"0","c":"Fürth","t":"PA"},{"s":"Willstätterstr","n":"30","c":"Nürnberg","t":"LA"}],"M12":[{"s":"Konferenzstr.Küche","n":"2","c":"Puschendorf","t":""},{"s":"Löffelholzstr.","n":"20","c":"Nürnberg","t":"PA"},{"s":"Officium Marco Hebet","n":"","c":"Führt","t":""},{"s":"Röthenbacher Hauptstr.","n":"32","c":"Nürnberg","t":"PA"}]};
+
+const ALL=[];
+Object.entries(DATA).forEach(([m,rows])=>rows.forEach(r=>ALL.push({...r,_m:m})));
+
+// Route-Reihenfolge
+const ROUTE=['Obermichelbach','Zirndorf','Cadolzburg','Fürth','Schwabach','Stein','Oberasbach','Nürnberg','Erlangen','Altdorf','Neumarkt','Ansbach','Höchstadt','Herzogenaurach','Ebermannstadt','Uffenheim','Langen','Eckental','Baiersdorf','Puschendorf','Lauf','Hagenbüchach','Diespeck','Wendelstein','Siegelsdorf','Veitsbronn','Röttenbach','Wilhermsdorf','Neustatt','Forchheim','Oberreichenbach','Herzog'];
+
+let selected=[];
+let dragIdx=null;
+
+// ── Init ─────────────────────────────────────────────────────────
+document.getElementById('plan-datum').value=new Date().toISOString().slice(0,10);
+document.getElementById('plan-tech').value='Kraus';
+
+// ── Suche ────────────────────────────────────────────────────────
+function nm(s){return s.toLowerCase().replace(/[.\-\/\s]/g,'')}
+
+function onSearch(){
+  const q=document.getElementById('search').value.trim();
+  const sg=document.getElementById('sugg');
+  if(q.length<1){sg.classList.remove('show');return}
+  const ql=q.toLowerCase();
+  const qn=nm(q);
+
+  // Verbesserter Score: beginnt mit = 0, enthält = 1
+  const scored=ALL.map(c=>{
+    const sl=c.s.toLowerCase();
+    const sn=nm(c.s);
+    const cl=c.c.toLowerCase();
+    let score=99;
+    if(sl.startsWith(ql)) score=0;
+    else if(sn.startsWith(qn)) score=1;
+    else if(sl.includes(ql)) score=2;
+    else if(sn.includes(qn)) score=3;
+    else if(cl.includes(ql)) score=4;
+    else if(c.n.includes(q)) score=5;
+    else return null;
+    return{...c,_score:score};
+  }).filter(Boolean);
+
+  scored.sort((a,b)=>a._score-b._score||a.s.localeCompare(b.s));
+  const res=scored.slice(0,15);
+
+  if(!res.length){sg.innerHTML='<div class="no-res">Keine Treffer</div>';}
+  else{
+    sg.innerHTML=res.map((c,i)=>`
+      <div class="si" onmousedown="addItem(${i})">
+        <div class="si-info">
+          <div class="si-street">${hl(c.s,q)} <strong>${c.n}</strong></div>
+          <div class="si-meta">${c.c} · ${c._m}</div>
+        </div>
+        <span class="si-badge">${c.t||'?'}</span>
+        <button class="si-add">+</button>
+      </div>`).join('');
+    sg._r=res;
+  }
+  sg.classList.add('show');
+}
+
+function hl(str,q){
+  const i=str.toLowerCase().indexOf(q.toLowerCase());
+  if(i<0)return str;
+  return str.slice(0,i)+'<strong style="color:var(--primary)">'+str.slice(i,i+q.length)+'</strong>'+str.slice(i+q.length);
+}
+
+function addItem(i){
+  const sg=document.getElementById('sugg');
+  const c=sg._r[i];
+  if(!selected.some(s=>s.s===c.s&&s.n===c.n&&s.c===c.c)){
+    selected.push({...c,bem:''});
+    renderSelected();
+    updateRouteChips();
+  }
+  document.getElementById('search').value='';
+  sg.classList.remove('show');
+}
+
+function hideDelay(){setTimeout(()=>document.getElementById('sugg').classList.remove('show'),200)}
+
+// ── Liste rendern ─────────────────────────────────────────────────
+function renderSelected(){
+  const wrap=document.getElementById('sel-list');
+  document.getElementById('sel-count').textContent=selected.length;
+  if(!selected.length){
+    wrap.innerHTML='<div class="sel-empty">Noch keine Adressen ausgewählt.</div>';
+    return;
+  }
+  wrap.innerHTML=selected.map((o,i)=>`
+    <div class="sel-item" id="si${i}" draggable="true"
+      ondragstart="dragStart(${i})" ondragover="dragOver(event,${i})"
+      ondrop="drop(${i})" ondragend="dragEnd()">
+      <span class="drag-handle">⠿</span>
+      <div class="sel-num">${i+1}</div>
+      <div class="sel-info">
+        <div class="sel-street">${o.s} ${o.n}</div>
+        <div class="sel-meta">${o.c} · ${o._m} · ${o.t}</div>
+        <input class="bem-inp" placeholder="Bemerkung (optional)…" value="${o.bem||''}"
+          onchange="selected[${i}].bem=this.value" onclick="event.stopPropagation()">
+      </div>
+      <button class="sel-remove" onclick="removeItem(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeItem(i){selected.splice(i,1);renderSelected();updateRouteChips();}
+function clearAll(){if(selected.length&&!confirm('Alle entfernen?'))return;selected=[];renderSelected();updateRouteChips();}
+
+// ── Drag & Drop ───────────────────────────────────────────────────
+function dragStart(i){dragIdx=i;document.getElementById('si'+i).classList.add('dragging');}
+function dragOver(e,i){e.preventDefault();document.querySelectorAll('.sel-item').forEach(el=>el.classList.remove('drag-over'));document.getElementById('si'+i)?.classList.add('drag-over');}
+function drop(i){
+  if(dragIdx===null||dragIdx===i)return;
+  const item=selected.splice(dragIdx,1)[0];
+  selected.splice(i,0,item);
+  renderSelected();updateRouteChips();
+}
+function dragEnd(){dragIdx=null;document.querySelectorAll('.sel-item').forEach(el=>{el.classList.remove('dragging');el.classList.remove('drag-over');});}
+
+// ── Route sortieren ───────────────────────────────────────────────
+function sortRoute(){
+  selected.sort((a,b)=>{
+    const ra=ROUTE.indexOf(a.c);
+    const rb=ROUTE.indexOf(b.c);
+    const ia=ra===-1?99:ra;
+    const ib=rb===-1?99:rb;
+    if(ia!==ib)return ia-ib;
+    return a.s.localeCompare(b.s);
+  });
+  renderSelected();
+  updateRouteChips();
+  showToast('Route sortiert ✓','ok');
+}
+
+function updateRouteChips(){
+  const cities=[...new Set(selected.map(o=>o.c))];
+  const sorted=[...cities].sort((a,b)=>{
+    const ra=ROUTE.indexOf(a),rb=ROUTE.indexOf(b);
+    return (ra===-1?99:ra)-(rb===-1?99:rb);
+  });
+  document.getElementById('route-chips').innerHTML=
+    sorted.length
+      ? sorted.map(c=>`<span class="rc has">📍 ${c} (${selected.filter(o=>o.c===c).length})</span>`).join('')+'<span class="rc">→ Heimweg</span>'
+      : '<span style="font-size:12px;color:var(--muted)">Noch keine Adressen</span>';
+}
+
+// ── An Firebase senden ────────────────────────────────────────────
+async function sendPlan(){
+  if(!selected.length){showToast('Bitte zuerst Adressen auswählen','err');return;}
+  if(!window._fbReady){showToast('Firebase nicht bereit','err');return;}
+
+  const btn=document.getElementById('btn-send');
+  btn.textContent='📤 Sende...';
+  btn.disabled=true;
+
+  const plan={
+    datum: document.getElementById('plan-datum').value,
+    techniker: document.getElementById('plan-tech').value.trim()||'Kraus',
+    ts: new Date().toISOString(),
+    tsDisplay: new Date().toLocaleString('de-DE'),
+    adressen: selected.map((o,i)=>({
+      idx:i, s:o.s, n:o.n, c:o.c, t:o.t, _m:o._m, bem:o.bem||'',
+      done:false, doneTs:''
+    }))
+  };
+
+  try {
+    const key=plan.datum+'_'+plan.techniker.toLowerCase();
+    await window._setDoc(window._doc(window._db,'tagespläne',key), plan);
+    showToast(`✓ Plan gesendet! ${selected.length} Adressen für ${plan.techniker}`,'ok');
+    btn.textContent='✓ Gesendet!';
+    setTimeout(()=>{btn.textContent='📤 An Techniker senden';btn.disabled=false;},3000);
+  } catch(e){
+    showToast('Fehler: '+e.message,'err');
+    btn.textContent='📤 An Techniker senden';
+    btn.disabled=false;
+  }
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast '+type;
+  setTimeout(()=>t.className='toast',3000);
+}
+</script>
+</body>
+</html>
